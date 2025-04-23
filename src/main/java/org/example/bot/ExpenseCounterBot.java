@@ -1,26 +1,36 @@
 package org.example.bot;
 
+import org.example.bot.handler.InlineKeyboard;
+import org.example.bot.DTO.ExpenseCounterDTO;
+import org.example.bot.DTO.UserState;
+import org.example.model.Expenditure;
+import org.example.service.BotService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
 @Component
 public class ExpenseCounterBot extends TelegramLongPollingBot {
 
-   private final InlineKeyboard inlineKeyboard;
-    private final Map<Long, UserState> userStates = new HashMap<>(); // chatId -> состояние
-    private final Map<Long, String> tempCategory = new HashMap<>(); // chatId -> выбранная категория
-    private final Map<Long, ExpenseData> tempExpenses = new HashMap<>();
+    private final BotService service;
+    private final InlineKeyboard inlineKeyboard;
+    private final Map<Long, ExpenseCounterDTO> tempData = new HashMap<>();
 
-    public ExpenseCounterBot(@Value("${bot.token}") String botToken, InlineKeyboard inlineKeyboard) {
-        super(botToken);
+    public ExpenseCounterBot(@Value("${telegram.bot.token}") String botToken,
+                             DefaultBotOptions options, BotService service,
+                             InlineKeyboard inlineKeyboard) {
+        super(options, botToken);
+        this.service = service;
         this.inlineKeyboard = inlineKeyboard;
     }
 
@@ -28,236 +38,191 @@ public class ExpenseCounterBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
+            int messageId = update.getMessage().getMessageId();
             long chatId = update.getMessage().getChatId();
+            long userId = update.getMessage().getFrom().getId();
+            String userName = update.getMessage().getFrom().getUserName();
+            String lastName = update.getMessage().getFrom().getLastName();
+            String firstName = update.getMessage().getFrom().getFirstName();
+            System.out.println("###############MESSAGE###############");
+            System.out.println("userName " + userName);
+            System.out.println("lastName " + lastName);
+            System.out.println("firstName " + firstName);
+            System.out.println("userId " + userId);
+            System.out.println("##############################");
 
-            // Проверяем состояние пользователя
-            UserState state = userStates.get(chatId);
+            if (tempData.get(chatId) != null && tempData.get(chatId).getState() != null) {
+                UserState state = tempData.get(chatId).getState();
 
-           if (state == UserState.WAITING_FOR_AMOUNT) {
-                try {
-                    double amount = Double.parseDouble(messageText);
-                    String category = tempCategory.get(chatId);
-
-                    // Сохраняем расход в базу данных
-                   // expenseService.saveExpense(chatId, amount, category);
-
-                    // Сбрасываем состояние
-                    userStates.remove(chatId);
-                    tempCategory.remove(chatId);
-
-                    SendMessage response = new SendMessage();
-                    response.setChatId(chatId);
-                   // response.setText(String.format("✅ Расход %.2f ₽ на %s сохранён", amount, getCategoryName(category)));
-                   // execute(response);
-
-                } catch (NumberFormatException e) {
-                    SendMessage error = new SendMessage();
-                    error.setChatId(chatId);
-                    error.setText("❌ Неверный формат суммы. Введите число, например: 1500 или 99.90");
-                  //  execute(error);
+                switch (state) {
+                    case WAITING_FOR_AMOUNT -> amountInputProcessing(messageText, chatId);
+                    case WAITING_FOR_COMMENT -> createNewExpense(chatId, messageText);
                 }
             }
-
-                if (messageText.equals("/start")) {
-                    SendMessage message = new SendMessage();
-                    message.setChatId(chatId);
-                    message.setReplyMarkup(inlineKeyboard.getFirstKeyboardMarkup());
-                    message.setText("Выберите команду \uD83C\uDFA8");
-                    try {
-                        execute(message);
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+            if (messageText.equals("/start")) {
+                tempData.clear();
+                sendMessage("Выберите команду \uD83C\uDFA8", chatId, inlineKeyboard.getFirstKeyboardMarkup());
+            }
 
         } else if (update.hasCallbackQuery()) {
             String call = update.getCallbackQuery().getData();
             long chatId = update.getCallbackQuery().getMessage().getChatId();
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
 
-            switch (call) {
-                case "1" -> {
-                    EditMessageText editMessage = getEditMessage(
-                            "Здесь можно узнать про Марка \uD83E\uDDF8",chatId,messageId);
-                    editMessage.setReplyMarkup(inlineKeyboard.getInfoMarkMenuKeyboard());
+            long userId = update.getCallbackQuery().getMessage().getFrom().getId();
 
-                    try {
-                        execute(editMessage);
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
+            if (tempData.get(chatId) != null && tempData.get(chatId).getState() != null) {
+                UserState state = tempData.get(chatId).getState();
 
+               if(call.equals("SKIP")){
+                   createNewExpense(chatId, null);
+               }
+               else if(call.equals("CANCEL")){
+                   tempData.clear();
+                   sendEditMessage(
+                           "Выберите команду \uD83C\uDFA8", chatId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+               }
+                else if (state == UserState.WAITING_FOR_DATE) {
+                    setDate(call, chatId, messageId);
                 }
-                case "2" -> {
-                    EditMessageText editMessage = getEditMessage(
-                            "\uD83D\uDCB2 Внесение расходов",chatId,messageId);
-                    editMessage.setReplyMarkup(inlineKeyboard.getFinanceMenuKeyboard());
-                    try {
-                        execute(editMessage);
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "4" ->{
-                    EditMessageText editMessage = getEditMessage(
-                            "Выберите категорию трат ⬇\uFE0F",chatId,messageId);
-                    editMessage.setReplyMarkup(inlineKeyboard.getExpenseCategoriesKeyboard());
-                    try {
-                        execute(editMessage);
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "6", "9" -> {
-                    EditMessageText editMessage = getEditMessage(
-                            "Выберите команду \uD83C\uDFA8",chatId,messageId);
-                    editMessage.setReplyMarkup(inlineKeyboard.getFirstKeyboardMarkup());
-                    try {
-                        execute(editMessage);
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "FOOD" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "FOOD",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "TRANSPORT" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "TRANSPORT",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "HEALING" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "HEALING",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "RENT" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "RENT",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "CARD2CARD" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "CARD2CARD",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "CHILD" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "CHILD",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "ALCOHOL" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "ALCOHOL",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "STUFF" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "STUFF",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "CLOTH" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "CLOTH",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "ENTERTAINMENT" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "ENTERTAINMENT",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "CREDIT" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "CREDIT",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                case "ANOTHER" -> {
-                    try {
-                        execute(setCategoryStage(
-                                "ANOTHER",
-                                chatId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                default -> {
-                    try {
-                        execute(getEditMessage("⚠\uFE0F В разработке...",chatId,messageId));
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
+            } else {
+                switch (call) {
+                    case "1" -> sendEditMessage(
+                            "Здесь можно узнать про Марка \uD83E\uDDF8", chatId, messageId, inlineKeyboard.getInfoMarkMenuKeyboard());
+                    case "2" -> sendEditMessage(
+                            "\uD83D\uDCB2 Внесение расходов", chatId, messageId, inlineKeyboard.getFinanceMenuKeyboard());
+                    case "EXPENSE" -> sendEditMessage(
+                            "Выберите категорию трат ⬇\uFE0F", chatId, messageId, inlineKeyboard.getExpenseCategoriesKeyboard());
+                    case "FOOD" -> setCategory("FOOD", chatId, messageId, userId);
+                    case "TRANSPORT" -> setCategory("TRANSPORT", chatId, messageId, userId);
+                    case "SPORT" -> setCategory("SPORT", chatId, messageId, userId);
+                    case "HEALING" -> setCategory("HEALING", chatId, messageId, userId);
+                    case "RENT" -> setCategory("RENT", chatId, messageId, userId);
+                    case "CARD2CARD" -> setCategory("CARD2CARD", chatId, messageId, userId);
+                    case "CHILD" -> setCategory("CHILD", chatId, messageId, userId);
+                    case "ALCOHOL" -> setCategory("ALCOHOL", chatId, messageId, userId);
+                    case "STUFF" -> setCategory("STUFF", chatId, messageId, userId);
+                    case "CLOTH" -> setCategory("CLOTH", chatId, messageId, userId);
+                    case "ENTERTAINMENT" -> setCategory("ENTERTAINMENT", chatId, messageId, userId);
+                    case "CREDIT" -> setCategory("CREDIT", chatId, messageId, userId);
+                    case "ANOTHER" -> setCategory("ANOTHER", chatId, messageId, userId);
+                    default ->
+                            sendEditMessage("⚠\uFE0F В разработке...", chatId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+
                 }
             }
 
         }
     }
 
-    private SendMessage setCategoryStage(String category, long chatId){
-        ExpenseData data = new ExpenseData();
+    private void createNewExpense(long chatId, String messageText) {
+        if (tempData.get(chatId) != null) {
+            ExpenseCounterDTO dto = tempData.get(chatId);
+            if (messageText != null) {
+                dto.setComment(messageText);
+            }
+            Expenditure exp = service.addExpense(dto);
+            String message = exp != null ? "Запись создана ✅" : "Неудачная попытка записи ❌\r\nПопробуйте позже!";
+            sendMessage(message, chatId, null);
+            sendMessage("Выберите команду \uD83C\uDFA8",
+                    chatId, inlineKeyboard.getFirstKeyboardMarkup());
+        } else {
+            sendMessage("Выберите команду \uD83C\uDFA8",
+                    chatId, inlineKeyboard.getFirstKeyboardMarkup());
+
+        }
+        tempData.clear();
+    }
+
+
+    private void setDate(String call, long chatId, int messageId) {
+        ExpenseCounterDTO data = tempData.get(chatId);
+        data.setState(UserState.WAITING_FOR_COMMENT);
+
+        LocalDate date = switch (call) {
+            case "BEFORE_YESTERDAY" -> LocalDate.now().minusDays(2);
+            case "YESTERDAY" -> LocalDate.now().minusDays(1);
+            case "TODAY" -> LocalDate.now();
+            default -> LocalDate.now();
+        };
+        data.setDate(date);
+
+        sendEditMessage("\uD83D\uDD39 Дата записана!\r\nДобавьте комментарий или нажмите Далее:",
+                chatId, messageId, inlineKeyboard.getCommentKeyboard());
+
+    }
+
+    private void amountInputProcessing(String messageText, long chatId) {
+        double amount = 0;
+        try {
+            amount = Double.parseDouble(messageText);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException(e);
+        }
+        if (amount < 1) {
+            sendMessage("❌ Неверный формат суммы. Введите число, например: 1500 или 99.90", chatId, null);
+        } else {
+            setAmount(amount, chatId);
+        }
+
+
+    }
+
+    private void setCategory(String category, long chatId, int messageId, long userId) {
+        ExpenseCounterDTO data = new ExpenseCounterDTO();
         data.setCategory(category);
-        tempExpenses.put(chatId, data);
-        userStates.put(chatId, UserState.WAITING_FOR_AMOUNT);
+        data.setUserUID(userId);
+        data.setState(UserState.WAITING_FOR_AMOUNT);
+        tempData.put(chatId, data);
+
+        sendEditMessage("❗❗❗Введите сумму расхода:\n\rНапример 1700",
+                chatId, messageId, inlineKeyboard.getCancelKeyboard());
+
+    }
+
+    private void setAmount(double amount, long chatId) {
+        ExpenseCounterDTO data = tempData.get(chatId);
+        data.setState(UserState.WAITING_FOR_DATE);
+        data.setExpend(amount);
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setText("Введите сумму расхода:\n\rНапример 1700");
-        message.setReplyMarkup(inlineKeyboard.getCancelKeyboard());
-        return message;
+        message.setText("✅Расходы записаны\r\n\uD83D\uDCC5Введите дату:");
+        message.setReplyMarkup(inlineKeyboard.getDateKeyboard());
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
-private EditMessageText getEditMessage(String message, long chatId, int messageId){
-    EditMessageText editMessage = new EditMessageText();
-    editMessage.setChatId(chatId);
-    editMessage.setMessageId(messageId);
-    editMessage.setText(message);
-    return editMessage;
-}
+    private void sendMessage(String message, long chatId, InlineKeyboardMarkup keyboard) {
+        SendMessage mes = new SendMessage();
+        mes.setChatId(chatId);
+        if (keyboard != null) {
+            mes.setReplyMarkup(keyboard);
+        }
+        mes.setText(message);
+        try {
+            execute(mes);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendEditMessage(String message, long chatId, int messageId, InlineKeyboardMarkup keyboard) {
+        EditMessageText editMessage = new EditMessageText();
+        editMessage.setChatId(chatId);
+        editMessage.setMessageId(messageId);
+        editMessage.setText(message);
+        editMessage.setReplyMarkup(keyboard);
+        try {
+            execute(editMessage);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public String getBotUsername() {

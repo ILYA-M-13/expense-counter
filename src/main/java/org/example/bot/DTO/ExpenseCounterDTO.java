@@ -1,15 +1,30 @@
-package org.example.bot;
-
-import org.example.data.SpendingCategory;
+package org.example.bot.DTO;
 
 import java.time.LocalDate;
 
-public class ExpenseData {
+public class ExpenseCounterDTO {
     private String category;
-    private Double amount;
+    private Double expend;
     private LocalDate date;
     private String comment;
+    private UserState state;
+    private Long userUID;
 
+    public Long getUserUID() {
+        return userUID;
+    }
+
+    public void setUserUID(Long userUID) {
+        this.userUID = userUID;
+    }
+
+    public UserState getState() {
+        return state;
+    }
+
+    public void setState(UserState state) {
+        this.state = state;
+    }
 
     public String getCategory() {
         return category;
@@ -19,12 +34,12 @@ public class ExpenseData {
         this.category = category;
     }
 
-    public Double getAmount() {
-        return amount;
+    public Double getExpend() {
+        return expend;
     }
 
-    public void setAmount(Double amount) {
-        this.amount = amount;
+    public void setExpend(Double expend) {
+        this.expend = expend;
     }
 
     public LocalDate getDate() {

@@ -1,4 +1,4 @@
-package org.example.data;
+package org.example.bot.DTO;
 
 public enum SpendingCategory {
     FOOD("еда"),
