@@ -1,14 +1,15 @@
-package org.example.model;
+package ru.mayorov.model;
 
 
 import jakarta.persistence.*;
-import org.example.bot.DTO.SpendingCategory;
+import ru.mayorov.bot.DTO.SpendingCategory;
 
 import java.util.Date;
 
 
 @Entity
-@Table(name = "expenditure")
+@Table(name = "expenditure", indexes = @Index(name = "idx_expenditure_user_datetime",
+        columnList = "user_id, datetime"))
 public class Expenditure {
 
     @Id

@@ -1,0 +1,7 @@
+package ru.mayorov.bot.DTO;
+
+public enum UserState {
+    WAITING_FOR_AMOUNT,
+    WAITING_FOR_DATE,
+    WAITING_FOR_COMMENT;
+}

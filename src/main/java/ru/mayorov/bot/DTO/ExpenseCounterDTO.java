@@ -1,4 +1,4 @@
-package org.example.bot.DTO;
+package ru.mayorov.bot.DTO;
 
 import java.time.LocalDate;
 

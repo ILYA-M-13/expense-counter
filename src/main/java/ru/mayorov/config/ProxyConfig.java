@@ -1,4 +1,4 @@
-package org.example.config;
+package ru.mayorov.config;
 
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -6,7 +6,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.example.bot.ExpenseCounterBot;
+import ru.mayorov.bot.ExpenseCounterBot;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,10 +40,9 @@ public class ProxyConfig {
     public DefaultBotOptions botOptions() {
         DefaultBotOptions options = new DefaultBotOptions();
         options.setProxyType(DefaultBotOptions.ProxyType.valueOf(type.toUpperCase()));
-        options.setProxyHost(host); // IP или домен прокси
-        options.setProxyPort(port);                 // Порт прокси (обычно 3128, 8080)
+        options.setProxyHost(host);
+        options.setProxyPort(port);
 
-        // Настройка аутентификации на прокси
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(
                 new AuthScope(options.getProxyHost(), options.getProxyPort()),
@@ -54,8 +53,7 @@ public class ProxyConfig {
         httpContext.setCredentialsProvider(credsProvider);
         httpContext.setAuthCache(new BasicAuthCache());
 
-        options.setHttpContext(httpContext); // Передаём контекст с логином/паролем
-
+        options.setHttpContext(httpContext);
         return options;
     }
 

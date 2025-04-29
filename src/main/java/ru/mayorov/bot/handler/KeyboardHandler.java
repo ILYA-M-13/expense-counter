@@ -1,33 +1,31 @@
-package org.example.bot.handler;
+package ru.mayorov.bot.handler;
 
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 @Component
-public class InlineKeyboard {
+public class KeyboardHandler {
 
-    public InlineKeyboardMarkup getFirstKeyboardMarkup(){
+    public InlineKeyboardMarkup getFirstKeyboardMarkup() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         rows.add(Arrays.asList(
-                createButton("\uD83D\uDC68\u200D\uD83C\uDF7C Про Марка", "1"),
-                createButton("\uD83D\uDCB0 Бюджет", "2")
+                createButton("\uD83D\uDC68\u200D\uD83C\uDF7C Про Марка", "MARK"),
+                createButton("\uD83D\uDCB0 Бюджет", "BUDGET")
         ));
         return new InlineKeyboardMarkup(rows);
     }
 
-    public InlineKeyboardMarkup getFinanceMenuKeyboard(){
+    public InlineKeyboardMarkup getFinanceMenuKeyboard() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         rows.add(Arrays.asList(
                 createButton("\uD83D\uDCB5 Внести расходы", "EXPENSE"),
-                createButton("\uD83D\uDCCA Посмотреть статистику", "5")
+                createButton("\uD83D\uDCCA Статистика", "STATISTICS")
         ));
         rows.add(Arrays.asList(
                 createButton("\uD83D\uDD19 Назад", "CANCEL")
@@ -35,13 +33,55 @@ public class InlineKeyboard {
         return new InlineKeyboardMarkup(rows);
     }
 
-    public InlineKeyboardMarkup getInfoMarkMenuKeyboard(){
+    public InlineKeyboardMarkup getStatMenuKeyboard() {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        rows.add(List.of(
+                createButton("\uD83D\uDCC9 По годам", "BYYEAR")
+        ));
+        rows.add(List.of(
+                createButton("\uD83D\uDD19 Назад", "CANCEL")
+        ));
+        return new InlineKeyboardMarkup(rows);
+
+    }
+
+    public InlineKeyboardMarkup getStatMenuByYearKeyboard(int year) {
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        int currentYear = LocalDate.now().getYear();
+        if (year < currentYear) {
+            int previous = year - 1;
+            int next = year + 1;
+            rows.add(Arrays.asList(
+                    createButton("◀\uFE0F " + previous, "BYYEAR_" + previous),
+                    createButton(next + " ▶\uFE0F", "BYYEAR_" + next)
+            ));
+        }
+        if (year == currentYear) {
+            int previous = year - 1;
+            rows.add(Arrays.asList(
+                    createButton("◀\uFE0F " + previous, "BYYEAR_" + previous),
+                    createButton(year + " ▶\uFE0F", "ignore")
+            ));
+        }
+
+        rows.add(List.of(
+                createButton("\uD83D\uDCC9 По категориям", "CATEGORY")
+        ));
+        rows.add(List.of(
+                createButton("\uD83D\uDD19 Назад", "CANCEL")
+        ));
+        return new InlineKeyboardMarkup(rows);
+    }
+
+    public InlineKeyboardMarkup getInfoMarkMenuKeyboard() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         rows.add(Arrays.asList(
                 createButton("\uD83D\uDCCC Сделать запись", "7"),
-                createButton("\uD83D\uDC6A Узнать про Марка", "8")
+                createButton("\uD83D\uDC6A Фото Марка", "8")
         ));
-        rows.add(Arrays.asList(
+        rows.add(List.of(
                 createButton("\uD83D\uDD19 Назад", "CANCEL")
         ));
         return new InlineKeyboardMarkup(rows);
@@ -80,7 +120,7 @@ public class InlineKeyboard {
         return new InlineKeyboardMarkup(rows);
     }
 
-    public InlineKeyboardMarkup getCommentKeyboard(){
+    public InlineKeyboardMarkup getCommentKeyboard() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
         rows.add(List.of(
@@ -90,26 +130,10 @@ public class InlineKeyboard {
         ));
         return new InlineKeyboardMarkup(rows);
     }
-    public InlineKeyboardMarkup getDateKeyboard(){
+
+    public InlineKeyboardMarkup getDateKeyboard() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-//        for (int i = 2; i >= 0; i--) {
-//
-//           String day = switch (i){
-//               case 2 : yield "позавчера ";
-//               case 1 : yield "вчера ";
-//               case 0 : yield "сегодня ";
-//               default: yield "";
-//            };
-//            LocalDate date = now.minusDays(i);
-//            String dayName = date.format(DateTimeFormatter.ofPattern("E",Locale.of("ru","RU")));
-//            String buttonText = day + dayName + " " + date.getDayOfMonth();
-//
-//
-//            rows.add(List.of(
-//                    createButton(buttonText, "DATE_" + date.toString())
-//            ));
-//
-//        }
+
         rows.add(List.of(
                 createButton("Позавчера", "BEFORE_YESTERDAY")));
         rows.add(List.of(

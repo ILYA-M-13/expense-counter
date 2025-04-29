@@ -1,6 +1,6 @@
-package org.example.config;
+package ru.mayorov.config;
 
-import org.example.bot.ExpenseCounterBot;
+import ru.mayorov.bot.ExpenseCounterBot;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;

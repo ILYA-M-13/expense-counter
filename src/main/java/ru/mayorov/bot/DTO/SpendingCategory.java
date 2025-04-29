@@ -1,16 +1,16 @@
-package org.example.bot.DTO;
+package ru.mayorov.bot.DTO;
 
 public enum SpendingCategory {
     FOOD("еда"),
-    RENT("квартплата"),
-    HEALING("лечение"),
+    RENT("жкх"),
+    HEALING("здоровье"),
     CHILD("ребенок"),
     ALCOHOL("алкоголь"),
     SPORT("спорт"),
     TRANSPORT("транспорт"),
     STUFF("вещи"),
-    CARD2CARD("перевод_на_карту"),
-    CREDIT("кредитная_карта"),
+    CARD2CARD("перевод на карту"),
+    CREDIT("кредитная карта"),
     CLOTH("одежда"),
     ENTERTAINMENT("развлечение"),
     ANOTHER("другое");
@@ -19,5 +19,9 @@ public enum SpendingCategory {
 
     SpendingCategory(String name) {
         this.name = name;
+    }
+
+    public String getName() {
+        return name;
     }
 }

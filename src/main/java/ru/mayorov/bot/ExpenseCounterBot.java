@@ -1,10 +1,10 @@
-package org.example.bot;
+package ru.mayorov.bot;
 
-import org.example.bot.handler.InlineKeyboard;
-import org.example.bot.DTO.ExpenseCounterDTO;
-import org.example.bot.DTO.UserState;
-import org.example.model.Expenditure;
-import org.example.service.BotService;
+import ru.mayorov.bot.handler.KeyboardHandler;
+import ru.mayorov.bot.DTO.ExpenseCounterDTO;
+import ru.mayorov.bot.DTO.UserState;
+import ru.mayorov.model.Expenditure;
+import ru.mayorov.service.BotService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
@@ -23,12 +23,13 @@ import java.util.Map;
 public class ExpenseCounterBot extends TelegramLongPollingBot {
 
     private final BotService service;
-    private final InlineKeyboard inlineKeyboard;
+    private final KeyboardHandler inlineKeyboard;
     private final Map<Long, ExpenseCounterDTO> tempData = new HashMap<>();
+    private final Map<Long, Integer> yearState= new HashMap<>();
 
     public ExpenseCounterBot(@Value("${telegram.bot.token}") String botToken,
                              DefaultBotOptions options, BotService service,
-                             InlineKeyboard inlineKeyboard) {
+                             KeyboardHandler inlineKeyboard) {
         super(options, botToken);
         this.service = service;
         this.inlineKeyboard = inlineKeyboard;
@@ -38,39 +39,33 @@ public class ExpenseCounterBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
-            int messageId = update.getMessage().getMessageId();
-            long chatId = update.getMessage().getChatId();
+            //long chatId = update.getMessage().getChatId();
             long userId = update.getMessage().getFrom().getId();
             String userName = update.getMessage().getFrom().getUserName();
             String lastName = update.getMessage().getFrom().getLastName();
             String firstName = update.getMessage().getFrom().getFirstName();
-            System.out.println("###############MESSAGE###############");
-            System.out.println("userName " + userName);
-            System.out.println("lastName " + lastName);
-            System.out.println("firstName " + firstName);
-            System.out.println("userId " + userId);
-            System.out.println("##############################");
 
-            if (tempData.get(chatId) != null && tempData.get(chatId).getState() != null) {
-                UserState state = tempData.get(chatId).getState();
+
+            if (tempData.get(userId) != null && tempData.get(userId).getState() != null) {
+                UserState state = tempData.get(userId).getState();
 
                 switch (state) {
-                    case WAITING_FOR_AMOUNT -> amountInputProcessing(messageText, chatId);
-                    case WAITING_FOR_COMMENT -> createNewExpense(chatId, messageText);
+                    case WAITING_FOR_AMOUNT -> amountInputProcessing(messageText, userId);
+                    case WAITING_FOR_COMMENT -> createNewExpense(userId, messageText);
                 }
             }
             if (messageText.equals("/start")) {
                 tempData.clear();
-                sendMessage("Выберите команду \uD83C\uDFA8", chatId, inlineKeyboard.getFirstKeyboardMarkup());
+                sendMessage("Выберите команду \uD83C\uDFA8", userId, inlineKeyboard.getFirstKeyboardMarkup());
             }
 
         } else if (update.hasCallbackQuery()) {
             String call = update.getCallbackQuery().getData();
             long chatId = update.getCallbackQuery().getMessage().getChatId();
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
+            long userId = update.getCallbackQuery().getFrom().getId();
 
-            long userId = update.getCallbackQuery().getMessage().getFrom().getId();
-
+            System.out.println(userId +" userId");
             if (tempData.get(chatId) != null && tempData.get(chatId).getState() != null) {
                 UserState state = tempData.get(chatId).getState();
 
@@ -79,18 +74,59 @@ public class ExpenseCounterBot extends TelegramLongPollingBot {
                }
                else if(call.equals("CANCEL")){
                    tempData.clear();
+                   yearState.clear();
                    sendEditMessage(
                            "Выберите команду \uD83C\uDFA8", chatId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
                }
                 else if (state == UserState.WAITING_FOR_DATE) {
                     setDate(call, chatId, messageId);
                 }
-            } else {
+            }
+            else if(yearState.get(userId) != null){
+                if(call.equals("CATEGORY")){
+                    yearState.clear();
+                    tempData.clear();
+                    String mes = service.getAllStatisticsByCategory(userId);
+                    sendEditMessage(mes, chatId, messageId, inlineKeyboard.getStatMenuKeyboard());
+
+                }
+               if(call.equals("CANCEL")){
+                   yearState.clear();
+                   tempData.clear();
+                   sendEditMessage(
+                           "Выберите команду \uD83C\uDFA8", chatId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+
+               }
+                if(call.startsWith("BYYEAR")){
+                    String year = call.substring(call.indexOf("_") + 1);
+                    int yearInt = 0;
+                   try{
+                     yearInt = Integer.parseInt(year);
+                   } catch (NumberFormatException e) {
+                       System.out.println("не удалось парсить год!");
+                       yearInt = LocalDate.now().getYear();
+                   }
+                    String mes = service.getStatisticsByCurrentYear(userId,yearInt);
+                    sendEditMessage(mes, chatId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(yearInt));
+
+                }
+            }
+            else {
                 switch (call) {
-                    case "1" -> sendEditMessage(
+                    case "MARK" -> sendEditMessage(
                             "Здесь можно узнать про Марка \uD83E\uDDF8", chatId, messageId, inlineKeyboard.getInfoMarkMenuKeyboard());
-                    case "2" -> sendEditMessage(
+                    case "BUDGET" -> sendEditMessage(
                             "\uD83D\uDCB2 Внесение расходов", chatId, messageId, inlineKeyboard.getFinanceMenuKeyboard());
+                    case "STATISTICS", "CATEGORY" ,"TOSTAT" ->{
+                        String mes = service.getAllStatisticsByCategory(userId);
+                        sendEditMessage(mes, chatId, messageId, inlineKeyboard.getStatMenuKeyboard());
+                    }
+                    case "BYYEAR" ->{
+                        int year = LocalDate.now().getYear();
+                        yearState.put(userId,year);
+                        String mes = service.getStatisticsByCurrentYear(userId,year);
+                        sendEditMessage(mes, chatId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(year));
+                    }
                     case "EXPENSE" -> sendEditMessage(
                             "Выберите категорию трат ⬇\uFE0F", chatId, messageId, inlineKeyboard.getExpenseCategoriesKeyboard());
                     case "FOOD" -> setCategory("FOOD", chatId, messageId, userId);
@@ -106,6 +142,12 @@ public class ExpenseCounterBot extends TelegramLongPollingBot {
                     case "ENTERTAINMENT" -> setCategory("ENTERTAINMENT", chatId, messageId, userId);
                     case "CREDIT" -> setCategory("CREDIT", chatId, messageId, userId);
                     case "ANOTHER" -> setCategory("ANOTHER", chatId, messageId, userId);
+                    case "CANCEL" -> {
+                        yearState.clear();
+                        tempData.clear();
+                        sendEditMessage(
+                                "Выберите команду \uD83C\uDFA8", chatId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+                    }
                     default ->
                             sendEditMessage("⚠\uFE0F В разработке...", chatId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
 
@@ -164,8 +206,6 @@ public class ExpenseCounterBot extends TelegramLongPollingBot {
         } else {
             setAmount(amount, chatId);
         }
-
-
     }
 
     private void setCategory(String category, long chatId, int messageId, long userId) {
@@ -194,7 +234,6 @@ public class ExpenseCounterBot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private void sendMessage(String message, long chatId, InlineKeyboardMarkup keyboard) {
