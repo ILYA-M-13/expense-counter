@@ -12,24 +12,14 @@ import java.util.List;
 @Component
 public class KeyboardHandler {
 
-    public InlineKeyboardMarkup getFirstKeyboardMarkup() {
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        rows.add(Arrays.asList(
-                createButton("\uD83D\uDC68\u200D\uD83C\uDF7C Про Марка", "MARK"),
-                createButton("\uD83D\uDCB0 Бюджет", "BUDGET")
-        ));
-        return new InlineKeyboardMarkup(rows);
-    }
 
-    public InlineKeyboardMarkup getFinanceMenuKeyboard() {
+    public InlineKeyboardMarkup getFirstKeyboardMarkup() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         rows.add(Arrays.asList(
                 createButton("\uD83D\uDCB5 Внести расходы", "EXPENSE"),
                 createButton("\uD83D\uDCCA Статистика", "STATISTICS")
         ));
-        rows.add(Arrays.asList(
-                createButton("\uD83D\uDD19 Назад", "CANCEL")
-        ));
+
         return new InlineKeyboardMarkup(rows);
     }
 
@@ -114,20 +104,11 @@ public class KeyboardHandler {
                 createButton("\uD83D\uDCB3 Кредитка", "CREDIT")
         ));
         rows.add(Arrays.asList(
-                createButton("✨ Прочее", "ANOTHER"),
-                createButton("🔙 Назад", "CANCEL")
+                createButton("\uD83D\uDCDE Связь", "COMMUNICATION"),
+                createButton("✨ Прочее", "ANOTHER")
         ));
-        return new InlineKeyboardMarkup(rows);
-    }
-
-    public InlineKeyboardMarkup getCommentKeyboard() {
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
         rows.add(List.of(
-                createButton("Далее ➡\uFE0F", "SKIP")));
-        rows.add(List.of(
-                createButton("❌ Отмена", "CANCEL")
-        ));
+                createButton("🔙 Назад", "CANCEL")));
         return new InlineKeyboardMarkup(rows);
     }
 

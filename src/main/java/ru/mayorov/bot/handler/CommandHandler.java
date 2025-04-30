@@ -27,11 +27,7 @@ public class CommandHandler {
 
     public void handleCallback(String call, long userId, int messageId){
         switch (call) {
-            case "MARK" -> messageSender.sendEditMessage(
-                    "Здесь можно узнать про Марка \uD83E\uDDF8", userId, messageId, inlineKeyboard.getInfoMarkMenuKeyboard());
-            case "BUDGET" -> messageSender.sendEditMessage(
-                    "\uD83D\uDCB2 Внесение расходов", userId, messageId, inlineKeyboard.getFinanceMenuKeyboard());
-            case "STATISTICS", "CATEGORY" ,"TOSTAT" ->{
+          case "STATISTICS", "CATEGORY" ,"TOSTAT" ->{
                 String mes = service.getAllStatisticsByCategory(userId);
                 messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
             }
@@ -44,6 +40,7 @@ public class CommandHandler {
             case "EXPENSE" -> messageSender.sendEditMessage(
                     "Выберите категорию трат ⬇\uFE0F", userId, messageId, inlineKeyboard.getExpenseCategoriesKeyboard());
             case "FOOD" -> setCategory("FOOD",  messageId, userId);
+            case "COMMUNICATION" -> setCategory("COMMUNICATION",  messageId, userId);
             case "TRANSPORT" -> setCategory("TRANSPORT",  messageId, userId);
             case "SPORT" -> setCategory("SPORT",  messageId, userId);
             case "HEALING" -> setCategory("HEALING",  messageId, userId);
@@ -62,14 +59,13 @@ public class CommandHandler {
                         "Выберите команду \uD83C\uDFA8", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
             }
             default ->
-                    messageSender.sendEditMessage("⚠\uFE0F В разработке...", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+                    messageSender.sendEditMessage("⚠\uFE0F Неизвестная команда!", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
 
         }
     }
 
     public void handleStateCallback(UserState state, String call, long userId, int messageId){
         switch (call){
-            case "SKIP" ->  createNewExpense(userId, null);
             case "CANCEL" ->{
                 userState.clearState(userId);
                 messageSender.sendEditMessage(
@@ -89,7 +85,6 @@ public class CommandHandler {
                     try{
                         yearInt = Integer.parseInt(year);
                     } catch (NumberFormatException e) {
-                        System.out.println("не удалось парсить год!");
                         yearInt = LocalDate.now().getYear();
                     }
                     String mes = service.getStatisticsByCurrentYear(userId,yearInt);
@@ -111,17 +106,15 @@ public class CommandHandler {
 
     }
 
-    private void createNewExpense(long userId, String messageText) {
+    private void createNewExpense(long userId, int messageId) {
         if (userState.getDTO(userId) != null) {
             ExpenseCounterDTO dto = userState.getDTO(userId);
-            if (messageText != null) {
-                dto.setComment(messageText);
-            }
+
             Expenditure exp = service.addExpense(dto);
             String message = exp != null ? "Запись создана ✅" : "Неудачная попытка записи ❌\r\nПопробуйте позже!";
-            messageSender.sendMessage(message, userId, null);
-            messageSender.sendMessage("Выберите команду \uD83C\uDFA8",
-                    userId, inlineKeyboard.getFirstKeyboardMarkup());
+
+            messageSender.sendEditMessage(message+"\r\nВыберите команду \uD83C\uDFA8",
+                    userId,messageId, inlineKeyboard.getFirstKeyboardMarkup());
         } else {
             messageSender.sendMessage("Выберите команду \uD83C\uDFA8",
                     userId, inlineKeyboard.getFirstKeyboardMarkup());
@@ -152,9 +145,8 @@ public class CommandHandler {
         if (userState.getState(userId) != null) {
             UserState state = userState.getState(userId);
 
-            switch (state) {
-                case WAITING_FOR_AMOUNT -> amountInputProcessing(messageText, userId);
-                case WAITING_FOR_COMMENT -> createNewExpense(userId, messageText);
+            if (state == UserState.WAITING_FOR_AMOUNT) {
+                amountInputProcessing(messageText, userId);
             }
         }
         if (messageText.equals("/start")) {
@@ -173,7 +165,6 @@ public class CommandHandler {
 
     private void setDate(String call, long userId, int messageId) {
         ExpenseCounterDTO data = userState.getDTO(userId);
-        userState.setUserState(UserState.WAITING_FOR_COMMENT,userId);
 
         LocalDate date = switch (call) {
             case "BEFORE_YESTERDAY" -> LocalDate.now().minusDays(2);
@@ -183,8 +174,7 @@ public class CommandHandler {
         };
         data.setDate(date);
 
-        messageSender.sendEditMessage("\uD83D\uDD39 Дата записана!\r\nДобавьте комментарий или нажмите Далее:",
-                userId, messageId, inlineKeyboard.getCommentKeyboard());
+        createNewExpense(userId ,messageId);
 
     }
 }

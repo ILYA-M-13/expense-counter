@@ -6,7 +6,7 @@ public class ExpenseCounterDTO {
     private String category;
     private Double expend;
     private LocalDate date;
-    private String comment;
+
     private Long userUID;
 
     public Long getUserUID() {
@@ -37,13 +37,9 @@ public class ExpenseCounterDTO {
         this.date = date;
     }
 
-    public String getComment() {
-        return comment;
-    }
 
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
+
+
 
     public void setUserUID(Long userUID) {
         this.userUID = userUID;

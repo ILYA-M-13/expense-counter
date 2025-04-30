@@ -30,7 +30,7 @@ public class BotService {
         expenditure.setCategory(SpendingCategory.valueOf(expenseCounterDTO.getCategory()));
         expenditure.setExpend(expenseCounterDTO.getExpend());
         expenditure.setUserId(expenseCounterDTO.getUserUID());
-        expenditure.setNote(expenseCounterDTO.getComment());
+
         expenditure.setDatetime(java.sql.Date.valueOf(expenseCounterDTO.getDate()));
         return repository.save(expenditure);
 

@@ -25,21 +25,18 @@ public class Expenditure {
     @Enumerated(EnumType.STRING)
     private SpendingCategory category;
 
-    @Column(columnDefinition = "LONGTEXT")
-    private String note;
-
     @Column(columnDefinition = "datetime",nullable = false)
     private Date datetime;
 
     public Expenditure() {
     }
 
-    public Expenditure(int id, long userId, double expend, SpendingCategory category, String note, Date time) {
+    public Expenditure(int id, long userId, double expend, SpendingCategory category, Date time) {
         this.id = id;
         this.userId = userId;
         this.expend = expend;
         this.category = category;
-        this.note = note;
+
         this.datetime = time;
     }
 
@@ -73,14 +70,6 @@ public class Expenditure {
 
     public void setCategory(SpendingCategory category) {
         this.category = category;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
     }
 
     public Date getDatetime() {

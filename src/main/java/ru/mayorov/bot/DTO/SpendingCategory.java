@@ -13,6 +13,7 @@ public enum SpendingCategory {
     CREDIT("кредитная карта"),
     CLOTH("одежда"),
     ENTERTAINMENT("развлечение"),
+    COMMUNICATION("связь"),
     ANOTHER("другое");
     private final String name;
 
