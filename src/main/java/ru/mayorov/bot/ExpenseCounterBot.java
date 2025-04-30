@@ -14,6 +14,8 @@ import java.time.LocalDate;
 @Component
 public class ExpenseCounterBot extends TelegramLongPollingBot {
 
+    @Value("${telegram.bot.name}")
+    private String botName;
     private final UserStateManager userState;
     private final CommandHandler commandHandler;
 
@@ -49,6 +51,6 @@ public class ExpenseCounterBot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return "YourGrandsonInfoBot";
+        return botName;
     }
 }
