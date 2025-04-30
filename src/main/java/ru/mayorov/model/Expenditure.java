@@ -25,7 +25,7 @@ public class Expenditure {
     @Enumerated(EnumType.STRING)
     private SpendingCategory category;
 
-    @Column(columnDefinition = "datetime",nullable = false)
+    @Column(columnDefinition = "TIMESTAMP",nullable = false)
     private Date datetime;
 
     public Expenditure() {

@@ -20,17 +20,17 @@ public interface ExpenditureRepository extends JpaRepository<Expenditure,Long> {
             " From Expenditure e WHERE e.userId = :userId group by e.category order by SUM(e.expend) desc")
     List<StatisticsResponseByCategory> getAllStatsByCategory(@Param("userId") long userId);
 
-    @Query("SELECT MONTHNAME(e.datetime) as month, SUM(e.expend) as total " +
+    @Query("SELECT to_char(e.datetime, 'Month') as month, SUM(e.expend) as total " +
             "FROM Expenditure e " +
-            "WHERE e.userId = :userId AND YEAR(e.datetime) = :year " +
-            "GROUP BY MONTHNAME(e.datetime), MONTH(e.datetime) " +
-            "ORDER BY MONTH(e.datetime) ASC ")
+            "WHERE e.userId = :userId AND EXTRACT(YEAR FROM e.datetime) = :year " +
+            "GROUP BY to_char(e.datetime, 'Month'), EXTRACT(MONTH FROM e.datetime) " +
+            "ORDER BY EXTRACT(MONTH FROM e.datetime) ASC ")
     List<MonthlyStatistic> findMonthlyStats(@Param("userId") long userId, @Param("year") int currentYear);
 
-    @Query("SELECT MONTHNAME(e.datetime) as month, e.category as category, SUM(e.expend) as amount " +
+    @Query("SELECT to_char(e.datetime, 'Month') as month, e.category as category, SUM(e.expend) as amount " +
             "FROM Expenditure e " +
-            "WHERE e.userId = :userId AND YEAR(e.datetime) = :year " +
-            "GROUP BY MONTHNAME(e.datetime), e.category " +
+            "WHERE e.userId = :userId AND EXTRACT(YEAR FROM e.datetime) = :year " +
+            "GROUP BY to_char(e.datetime, 'Month'), e.category " +
             "ORDER BY SUM(e.expend) desc")
     List<CategoryStatistic> findCategoryStats(@Param("userId") long userId, @Param("year") int currentYear);
 

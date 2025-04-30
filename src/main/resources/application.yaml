@@ -4,22 +4,26 @@ server:
 spring:
   profiles:
     active: proxyON  # или  proxyOFF  proxyON
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
 
   datasource:
-    url: jdbc:h2:file:C:/database/datasimulation
-    driver-class-name: org.h2.Driver
+    url: jdbc:postgresql://localhost:5432/expense_db # jdbc:h2:file:C:/database/datasimulation
+    username: ${SQL_USER}
+    password: ${SQL_PASS}
+    driver-class-name: org.postgresql.Driver #org.h2.Driver
+    hikari:
+      maximum-pool-size: 10
 
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
-      ddl-auto: update #update none
+      ddl-auto: update #update none validate create
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect #org.hibernate.dialect.H2Dialect
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
   sql:
     init:
       mode: never #always
@@ -27,12 +31,12 @@ spring:
     serialization:
       fail-on-empty-beans: false
 
-logging:
-  level:
-    org:
-      hibernate:
-        SQL: DEBUG
-        type:
-          descriptor:
-            sql:
-              BasicBinder: TRACE
+#logging:
+  #level:
+    #org:
+     # hibernate:
+        #SQL: DEBUG
+        #type:
+          #descriptor:
+            #sql:
+              #BasicBinder: TRACE
