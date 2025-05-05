@@ -1,5 +1,6 @@
 package ru.mayorov.bot.handler;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.mayorov.bot.DTO.ExpenseCounterDTO;
@@ -10,49 +11,41 @@ import ru.mayorov.service.BotService;
 import java.time.LocalDate;
 
 @Component
+@RequiredArgsConstructor
 public class CommandHandler {
     private final MessageSender messageSender;
     private final KeyboardHandler inlineKeyboard;
     private final BotService service;
     private final UserStateManager userState;
 
-    public CommandHandler(MessageSender messageSender,
-                          KeyboardHandler inlineKeyboard, BotService service, UserStateManager userState) {
-        this.messageSender = messageSender;
-        this.inlineKeyboard = inlineKeyboard;
-        this.service = service;
-        this.userState = userState;
-    }
-
-
-    public void handleCallback(String call, long userId, int messageId){
+    public void handleCallback(String call, long userId, int messageId) {
         switch (call) {
-          case "STATISTICS", "CATEGORY" ,"TOSTAT" ->{
+            case "STATISTICS", "CATEGORY", "TOSTAT" -> {
                 String mes = service.getAllStatisticsByCategory(userId);
                 messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
             }
-            case "BYYEAR" ->{
+            case "BYYEAR" -> {
                 int year = LocalDate.now().getYear();
-                userState.setUserState(UserState.WAITING_FOR_PRESS_BTN_YEAR,userId);
-                String mes = service.getStatisticsByCurrentYear(userId,year);
+                userState.setUserState(UserState.WAITING_FOR_PRESS_BTN_YEAR, userId);
+                String mes = service.getStatisticsByCurrentYear(userId, year);
                 messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(year));
             }
             case "EXPENSE" -> messageSender.sendEditMessage(
                     "Выберите категорию трат ⬇\uFE0F", userId, messageId, inlineKeyboard.getExpenseCategoriesKeyboard());
-            case "FOOD" -> setCategory("FOOD",  messageId, userId);
-            case "COMMUNICATION" -> setCategory("COMMUNICATION",  messageId, userId);
-            case "TRANSPORT" -> setCategory("TRANSPORT",  messageId, userId);
-            case "SPORT" -> setCategory("SPORT",  messageId, userId);
-            case "HEALING" -> setCategory("HEALING",  messageId, userId);
+            case "FOOD" -> setCategory("FOOD", messageId, userId);
+            case "COMMUNICATION" -> setCategory("COMMUNICATION", messageId, userId);
+            case "TRANSPORT" -> setCategory("TRANSPORT", messageId, userId);
+            case "SPORT" -> setCategory("SPORT", messageId, userId);
+            case "HEALING" -> setCategory("HEALING", messageId, userId);
             case "RENT" -> setCategory("RENT", messageId, userId);
             case "CARD2CARD" -> setCategory("CARD2CARD", messageId, userId);
-            case "CHILD" -> setCategory("CHILD",  messageId, userId);
-            case "ALCOHOL" -> setCategory("ALCOHOL",  messageId, userId);
-            case "STUFF" -> setCategory("STUFF",  messageId, userId);
-            case "CLOTH" -> setCategory("CLOTH",  messageId, userId);
-            case "ENTERTAINMENT" -> setCategory("ENTERTAINMENT",  messageId, userId);
-            case "CREDIT" -> setCategory("CREDIT",  messageId, userId);
-            case "ANOTHER" -> setCategory("ANOTHER",  messageId, userId);
+            case "CHILD" -> setCategory("CHILD", messageId, userId);
+            case "ALCOHOL" -> setCategory("ALCOHOL", messageId, userId);
+            case "STUFF" -> setCategory("STUFF", messageId, userId);
+            case "CLOTH" -> setCategory("CLOTH", messageId, userId);
+            case "ENTERTAINMENT" -> setCategory("ENTERTAINMENT", messageId, userId);
+            case "CREDIT" -> setCategory("CREDIT", messageId, userId);
+            case "ANOTHER" -> setCategory("ANOTHER", messageId, userId);
             case "CANCEL" -> {
                 userState.clearState(userId);
                 messageSender.sendEditMessage(
@@ -64,9 +57,9 @@ public class CommandHandler {
         }
     }
 
-    public void handleStateCallback(UserState state, String call, long userId, int messageId){
-        switch (call){
-            case "CANCEL" ->{
+    public void handleStateCallback(UserState state, String call, long userId, int messageId) {
+        switch (call) {
+            case "CANCEL" -> {
                 userState.clearState(userId);
                 messageSender.sendEditMessage(
                         "Выберите команду \uD83C\uDFA8", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
@@ -79,16 +72,21 @@ public class CommandHandler {
             default -> {
                 if (state == UserState.WAITING_FOR_DATE) {
                     setDate(call, userId, messageId);
-                }if (state == UserState.WAITING_FOR_PRESS_BTN_YEAR){
+                }
+                if (state == UserState.WAITING_FOR_PRESS_BTN_YEAR) {
                     String year = call.substring(call.indexOf("_") + 1);
-                    int yearInt = 0;
-                    try{
-                        yearInt = Integer.parseInt(year);
-                    } catch (NumberFormatException e) {
-                        yearInt = LocalDate.now().getYear();
+                    if (!year.equals("ignore")) {
+
+                        int yearInt = 0;
+                        try {
+                            yearInt = Integer.parseInt(year);
+                        } catch (NumberFormatException e) {
+                            yearInt = LocalDate.now().getYear();
+                        }
+
+                        String mes = service.getStatisticsByCurrentYear(userId, yearInt);
+                        messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(yearInt));
                     }
-                    String mes = service.getStatisticsByCurrentYear(userId,yearInt);
-                    messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(yearInt));
                 }
             }
         }
@@ -98,8 +96,8 @@ public class CommandHandler {
         ExpenseCounterDTO data = new ExpenseCounterDTO();
         data.setCategory(category);
         data.setUserUID(userId);
-        userState.setUserState(UserState.WAITING_FOR_AMOUNT,userId);
-        userState.setDTO(data,userId);
+        userState.setUserState(UserState.WAITING_FOR_AMOUNT, userId);
+        userState.setDTO(data, userId);
 
         messageSender.sendEditMessage("❗❗❗Введите сумму расхода:\n\rНапример 1700",
                 userId, messageId, inlineKeyboard.getCancelKeyboard());
@@ -113,8 +111,8 @@ public class CommandHandler {
             Expenditure exp = service.addExpense(dto);
             String message = exp != null ? "Запись создана ✅" : "Неудачная попытка записи ❌\r\nПопробуйте позже!";
 
-            messageSender.sendEditMessage(message+"\r\nВыберите команду \uD83C\uDFA8",
-                    userId,messageId, inlineKeyboard.getFirstKeyboardMarkup());
+            messageSender.sendEditMessage(message + "\r\nВыберите команду \uD83C\uDFA8",
+                    userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
         } else {
             messageSender.sendMessage("Выберите команду \uD83C\uDFA8",
                     userId, inlineKeyboard.getFirstKeyboardMarkup());
@@ -157,9 +155,9 @@ public class CommandHandler {
 
     private void setAmount(double amount, long userId) {
         ExpenseCounterDTO data = userState.getDTO(userId);
-        userState.setUserState(UserState.WAITING_FOR_DATE,userId);
+        userState.setUserState(UserState.WAITING_FOR_DATE, userId);
         data.setExpend(amount);
-        messageSender.sendMessage("✅Расходы записаны\r\n\uD83D\uDCC5Введите дату:",userId,inlineKeyboard.getDateKeyboard());
+        messageSender.sendMessage("✅Расходы записаны\r\n\uD83D\uDCC5Введите дату:", userId, inlineKeyboard.getDateKeyboard());
 
     }
 
@@ -174,7 +172,7 @@ public class CommandHandler {
         };
         data.setDate(date);
 
-        createNewExpense(userId ,messageId);
+        createNewExpense(userId, messageId);
 
     }
 }

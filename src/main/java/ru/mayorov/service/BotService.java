@@ -1,6 +1,7 @@
 package ru.mayorov.service;
 
 
+import lombok.RequiredArgsConstructor;
 import ru.mayorov.bot.DTO.ExpenseCounterDTO;
 import ru.mayorov.bot.DTO.SpendingCategory;
 import ru.mayorov.bot.DTO.response.*;
@@ -16,13 +17,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class BotService {
+
     private final ExpenditureRepository repository;
-
-    public BotService(ExpenditureRepository repository) {
-        this.repository = repository;
-    }
-
 
     public Expenditure addExpense(ExpenseCounterDTO expenseCounterDTO) {
 
@@ -30,7 +28,6 @@ public class BotService {
         expenditure.setCategory(SpendingCategory.valueOf(expenseCounterDTO.getCategory()));
         expenditure.setExpend(expenseCounterDTO.getExpend());
         expenditure.setUserId(expenseCounterDTO.getUserUID());
-
         expenditure.setDatetime(java.sql.Date.valueOf(expenseCounterDTO.getDate()));
         return repository.save(expenditure);
 
@@ -43,21 +40,20 @@ public class BotService {
                         .collect(Collectors.joining("\r\n"));
     }
 
-
     public String getStatisticsByCurrentYear(long userId, int currentYear) {
         Map<String, StatisticsResponseByMonth> result = new LinkedHashMap<>();
 
-        for (MonthlyStatistic monthlyStatistic : repository.findMonthlyStats(userId,currentYear)) {
+        for (MonthlyStatistic monthlyStatistic : repository.findMonthlyStats(userId, currentYear)) {
             result.put(monthlyStatistic.getMonth(),
                     new StatisticsResponseByMonth(monthlyStatistic.getMonth(),
                             monthlyStatistic.getTotal(),
                             new ArrayList<>()
                     ));
         }
-        for (CategoryStatistic categoryStatistic : repository.findCategoryStats(userId,currentYear)) {
+        for (CategoryStatistic categoryStatistic : repository.findCategoryStats(userId, currentYear)) {
             StatisticsResponseByMonth response = result.get(categoryStatistic.getMonth());
             response.getCategoryList().add(
-                    new StatisticsResponseByCategory(categoryStatistic.getAmount(),categoryStatistic.getCategory()));
+                    new StatisticsResponseByCategory(categoryStatistic.getAmount(), categoryStatistic.getCategory()));
 
         }
 
@@ -77,6 +73,6 @@ public class BotService {
                         })
                         .collect(Collectors.joining("\n\n"));
 
-        }
+    }
 
 }

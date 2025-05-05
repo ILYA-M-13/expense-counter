@@ -1,5 +1,10 @@
 package ru.mayorov.bot.DTO;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum SpendingCategory {
     FOOD("еда"),
     RENT("жкх"),
@@ -17,12 +22,4 @@ public enum SpendingCategory {
     ANOTHER("другое");
     private final String name;
 
-
-    SpendingCategory(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
-    }
 }
