@@ -30,6 +30,19 @@ public class CommandHandler {
                 String mes = service.getStatisticsByCurrentYear(userId, year);
                 messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(year));
             }
+            case "DELETE" -> {
+                String mes = service.getLastExp(userId);
+                if (mes != null) {
+                    messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getConfirmDeletionMenuKeyboard());
+                } else {
+                    mes = "Не найдено ни одной записи \uD83E\uDD37\u200D♂\uFE0F";
+                    messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
+                }
+            }
+            case "YES" -> {
+                String mes = service.delLastExp(userId);
+                messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+            }
             case "EXPENSE" -> messageSender.sendEditMessage(
                     "Выберите категорию трат ⬇\uFE0F", userId, messageId, inlineKeyboard.getExpenseCategoriesKeyboard());
             case "FOOD" -> setCategory("FOOD", messageId, userId);
@@ -44,6 +57,8 @@ public class CommandHandler {
             case "STUFF" -> setCategory("STUFF", messageId, userId);
             case "CLOTH" -> setCategory("CLOTH", messageId, userId);
             case "ENTERTAINMENT" -> setCategory("ENTERTAINMENT", messageId, userId);
+            case "REPAIR" -> setCategory("REPAIR", messageId, userId);
+            case "HOBBY" -> setCategory("HOBBY", messageId, userId);
             case "CREDIT" -> setCategory("CREDIT", messageId, userId);
             case "ANOTHER" -> setCategory("ANOTHER", messageId, userId);
             case "CANCEL" -> {
@@ -98,8 +113,8 @@ public class CommandHandler {
         data.setUserUID(userId);
         userState.setUserState(UserState.WAITING_FOR_AMOUNT, userId);
         userState.setDTO(data, userId);
-
-        messageSender.sendEditMessage("❗❗❗Введите сумму расхода:\n\rНапример 1700",
+        userState.addMessage(messageId, userId);
+        messageSender.sendEditMessage("Введите сумму ❗(◕‿◕)❗:\n\rНапример 1700",
                 userId, messageId, inlineKeyboard.getCancelKeyboard());
 
     }
@@ -107,7 +122,6 @@ public class CommandHandler {
     private void createNewExpense(long userId, int messageId) {
         if (userState.getDTO(userId) != null) {
             ExpenseCounterDTO dto = userState.getDTO(userId);
-
             Expenditure exp = service.addExpense(dto);
             String message = exp != null ? "Запись создана ✅" : "Неудачная попытка записи ❌\r\nПопробуйте позже!";
 
@@ -118,33 +132,33 @@ public class CommandHandler {
                     userId, inlineKeyboard.getFirstKeyboardMarkup());
 
         }
+        userState.getMessageMap().forEach(messageSender::deleteMessage);
+        userState.clearMessageMap();
         userState.clearExpenseCounterDTO(userId);
         userState.clearState(userId);
     }
 
-    private void amountInputProcessing(String messageText, long userId) {
+    private void amountInputProcessing(String messageText, long userId, int messageId, long chatId) {
         double amount = 0;
         try {
             amount = Double.parseDouble(messageText);
-        } catch (NumberFormatException e) {
-            throw new RuntimeException(e);
-        }
-        if (amount < 1) {
-            messageSender.sendMessage("❌ Неверный формат суммы. Введите число, например: 1500 или 99.90", userId, null);
-        } else {
+        } catch (NumberFormatException ignored) {}
+        messageSender.deleteMessage(messageId, chatId);
+        if (amount > 1)
             setAmount(amount, userId);
-        }
     }
 
     public void handleTextMessage(Update update) {
         String messageText = update.getMessage().getText();
+        int messageId = update.getMessage().getMessageId();
+        long chatId = update.getMessage().getChatId();
         long userId = update.getMessage().getFrom().getId();
 
         if (userState.getState(userId) != null) {
             UserState state = userState.getState(userId);
 
             if (state == UserState.WAITING_FOR_AMOUNT) {
-                amountInputProcessing(messageText, userId);
+                amountInputProcessing(messageText, userId, messageId, chatId);
             }
         }
         if (messageText.equals("/start")) {
@@ -152,6 +166,7 @@ public class CommandHandler {
             messageSender.sendMessage("Выберите команду \uD83C\uDFA8", userId, inlineKeyboard.getFirstKeyboardMarkup());
         }
     }
+
 
     private void setAmount(double amount, long userId) {
         ExpenseCounterDTO data = userState.getDTO(userId);

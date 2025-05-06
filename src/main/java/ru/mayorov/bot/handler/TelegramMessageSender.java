@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -40,6 +41,18 @@ public class TelegramMessageSender implements MessageSender {
         editMessage.setReplyMarkup(keyboard);
         try {
             bot.execute(editMessage);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void deleteMessage(int messageId,long chatId) {
+        DeleteMessage deleteMessage = new DeleteMessage();
+        deleteMessage.setMessageId(messageId);
+        deleteMessage.setChatId(chatId);
+        try {
+            bot.execute(deleteMessage);
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }

@@ -1,12 +1,12 @@
 package ru.mayorov.bot.DTO;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
+@Getter @AllArgsConstructor
 public enum SpendingCategory {
-    FOOD("еда"),
+    FOOD("продукты"),
     RENT("жкх"),
     HEALING("здоровье"),
     CHILD("ребенок"),
@@ -19,6 +19,8 @@ public enum SpendingCategory {
     CLOTH("одежда"),
     ENTERTAINMENT("развлечение"),
     COMMUNICATION("связь"),
+    REPAIR("ремонт"),
+    HOBBY("хобби"),
     ANOTHER("другое");
     private final String name;
 

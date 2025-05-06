@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,11 +62,11 @@ public class BotService {
                 result.values().stream()
                         .map(month -> {
                             String categories = month.getCategoryList().stream()
-                                    .map(cat -> String.format("%s: %.2f ₽", cat.getCategory().getName(), cat.getSum()))
+                                    .map(cat -> String.format("%s:  %.2f ₽", cat.getCategory().getName(), cat.getSum()))
                                     .collect(Collectors.joining("\n   → "));
 
                             return String.format(
-                                    "• %s: %.2f ₽\n   → %s",
+                                    "• %s: %.2f ₽\n   →  %s",
                                     month.getMonth(),
                                     month.getSpentPerMonth(),
                                     categories
@@ -75,4 +76,16 @@ public class BotService {
 
     }
 
+    public String getLastExp(long userId) {
+     Optional<ExpResponse> expResponse = repository.getLastExp(userId);
+     return "Ваша последняя запись \uD83D\uDC47\n"+expResponse.map(response -> String.format("%s: %.2f ₽\n От: %s",
+             response.getCategory().getName(),
+             response.getExp(),
+             response.getDate())).orElse(null)+"\nУдалить запись?";
+    }
+
+    public String delLastExp(long userId) {
+       int result = repository.deleteLastExpenditure(userId);
+       return result == 1 ? "\uD83C\uDFAF Запись удалена!" : "Не удалось удалить запись!";
+    }
 }

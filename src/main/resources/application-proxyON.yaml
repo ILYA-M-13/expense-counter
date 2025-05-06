@@ -1,7 +1,7 @@
 telegram:
   bot:
-    token: ${BOTTOKEN}
-    name: ${BOTNAME}
+    token: ${BOT_TOKEN}
+    name: ${BOT_NAME}
     proxy:
       host: ${HOST}
       port: ${PORT}

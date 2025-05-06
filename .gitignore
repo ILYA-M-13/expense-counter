@@ -12,6 +12,9 @@ target/
 *.iml
 *.ipr
 
+### Local Configuration ###
+.env
+
 ### Eclipse ###
 .apt_generated
 .classpath

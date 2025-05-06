@@ -19,7 +19,9 @@ public class KeyboardHandler {
                 createButton("\uD83D\uDCB5 Внести расходы", "EXPENSE"),
                 createButton("\uD83D\uDCCA Статистика", "STATISTICS")
         ));
-
+        rows.add(List.of(
+                createButton("\uD83E\uDDF9 Удалить последнюю запись", "DELETE")
+        ));
         return new InlineKeyboardMarkup(rows);
     }
 
@@ -34,6 +36,17 @@ public class KeyboardHandler {
         ));
         return new InlineKeyboardMarkup(rows);
 
+    }
+
+    public InlineKeyboardMarkup getConfirmDeletionMenuKeyboard(){
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        rows.add(List.of(
+                createButton("☑\uFE0F Да", "YES")
+        ));
+        rows.add(List.of(
+                createButton("❌ Отмена", "CANCEL")
+        ));
+        return new InlineKeyboardMarkup(rows);
     }
 
     public InlineKeyboardMarkup getStatMenuByYearKeyboard(int year) {
@@ -57,7 +70,7 @@ public class KeyboardHandler {
         }
 
         rows.add(List.of(
-                createButton("\uD83D\uDCC9 По категориям", "CATEGORY")
+                createButton("\uD83D\uDCC8 По категориям", "CATEGORY")
         ));
         rows.add(List.of(
                 createButton("\uD83D\uDD19 Назад", "CANCEL")
@@ -80,7 +93,7 @@ public class KeyboardHandler {
     public InlineKeyboardMarkup getExpenseCategoriesKeyboard() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         rows.add(Arrays.asList(
-                createButton("\uD83C\uDF4F Еда", "FOOD"),
+                createButton("\uD83C\uDF4F Продукты", "FOOD"),
                 createButton("🚕 Транспорт", "TRANSPORT")
         ));
         rows.add(Arrays.asList(
@@ -97,14 +110,18 @@ public class KeyboardHandler {
         ));
         rows.add(Arrays.asList(
                 createButton("\uD83D\uDCE6 Вещи", "STUFF"),
-                createButton("\uD83D\uDC56 Одежда", "CLOTH")
+                createButton("\uD83D\uDC57 Одежда", "CLOTH")
         ));
         rows.add(Arrays.asList(
                 createButton("\uD83C\uDFAD Развлечение", "ENTERTAINMENT"),
                 createButton("\uD83D\uDCB3 Кредитка", "CREDIT")
         ));
         rows.add(Arrays.asList(
-                createButton("\uD83D\uDCDE Связь", "COMMUNICATION"),
+                createButton("\uD83D\uDEE0 Ремонт", "REPAIR"),
+                createButton("\uD83C\uDFD4 Хобби", "HOBBY")
+        ));
+        rows.add(Arrays.asList(
+                createButton("\uD83D\uDCE1 Связь", "COMMUNICATION"),
                 createButton("✨ Прочее", "ANOTHER")
         ));
         rows.add(List.of(

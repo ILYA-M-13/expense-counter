@@ -5,4 +5,5 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 public interface MessageSender {
     void sendMessage(String message, long userId, InlineKeyboardMarkup keyboard);
     void sendEditMessage(String message, long userId, int messageId, InlineKeyboardMarkup keyboard);
+    void deleteMessage(int messageId,long chatId);
 }

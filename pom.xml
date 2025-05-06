@@ -36,6 +36,11 @@
       <version>1.18.36</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>io.github.cdimascio</groupId>
+      <artifactId>dotenv-java</artifactId>
+      <version>3.2.0</version>
+    </dependency>
 
     <!-- database-->
     <dependency>
@@ -73,7 +78,7 @@
         <configuration>
           <source>21</source>
           <target>21</target>
-        </configuration>
+          </configuration>
       </plugin>
     </plugins>
   </build>

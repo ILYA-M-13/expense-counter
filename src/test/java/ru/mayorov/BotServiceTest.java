@@ -66,7 +66,7 @@ public class BotServiceTest {
         Mockito.when(repository.getAllStatsByCategory(
                 Mockito.anyLong())).thenReturn(List.of(new StatisticsResponseByCategory(100.0, SpendingCategory.FOOD)));
         String result = service.getAllStatisticsByCategory(123L);
-        assertTrue(result.contains("еда"));
+        assertTrue(result.contains("продукты"));
     }
 
     @Test
@@ -104,7 +104,7 @@ public class BotServiceTest {
 
         String result = service.getStatisticsByCurrentYear(123L,2023);
 
-        assertTrue(result.contains("еда"));
+        assertTrue(result.contains("продукты"));
         assertTrue(result.contains("March"));
         assertTrue(result.contains("120,00 ₽"));
         assertTrue(result.contains("100,00 ₽"));
