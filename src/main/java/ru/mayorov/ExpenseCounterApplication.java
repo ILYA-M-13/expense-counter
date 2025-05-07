@@ -15,7 +15,7 @@ public class ExpenseCounterApplication {
                 System.setProperty(e.getKey(), e.getValue())
         );
 
-        String[] requiredVars = {"SQL_USER", "SQL_PASS", "BOT_TOKEN", "BOT_NAME", "HOST", "PORT", "TYPE", "USERNAME", "PASSWORD"};
+        String[] requiredVars = {"SQL_USER", "SQL_PASS", "BOT_TOKEN", "BOT_NAME"};
         for (String var : requiredVars) {
             if (dotenv.get(var) == null) {
                 throw new IllegalStateException("Отсутствуют переменные окружения: " + var);

@@ -2,6 +2,7 @@ server:
   port: 8080
 
 spring:
+
   profiles:
     active: proxyON  # или  proxyOFF  proxyON
 
@@ -13,10 +14,20 @@ spring:
     hikari:
       maximum-pool-size: 10
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+    table: flyway_schema_history
+    schemas: expense_db
+    #user: ${SQL_USER}
+    #password: ${SQL_PASS}
+
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: update #update none validate create
+      ddl-auto: validate #update none validate create
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect #org.hibernate.dialect.H2Dialect
