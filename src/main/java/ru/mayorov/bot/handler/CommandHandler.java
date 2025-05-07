@@ -4,46 +4,67 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.mayorov.bot.DTO.ExpenseCounterDTO;
-import ru.mayorov.bot.DTO.UserState;
 import ru.mayorov.model.Expenditure;
 import ru.mayorov.service.BotService;
+import ru.mayorov.service.WhitelistService;
 
 import java.time.LocalDate;
 
 @Component
 @RequiredArgsConstructor
 public class CommandHandler {
-    private final MessageSender messageSender;
+    private final MessageService messageService;
     private final KeyboardHandler inlineKeyboard;
     private final BotService service;
     private final UserStateManager userState;
+    private final WhitelistService whitelistService;
+
+
+    private void handleAdminCallback(String call, long userId, int messageId) {
+        if (call.contains("APPROVE_")) {
+            String[] strings = call.split("_");
+            String id = strings[1];
+            String name = strings[2];
+            try {
+                Long newUserId = Long.valueOf(id);
+                String result = whitelistService.addToWhitelist(newUserId, name);
+                messageService.sendEditMessage(result, userId, messageId, null);
+            } catch (NumberFormatException ignore) {
+                messageService.sendEditMessage("NumberFormatException", userId, messageId, null);
+            }
+
+        }
+        if (call.equals("CANCEL")) {
+            messageService.sendEditMessage("Отмена", userId, messageId, null);
+        }
+    }
 
     public void handleCallback(String call, long userId, int messageId) {
         switch (call) {
             case "STATISTICS", "CATEGORY", "TOSTAT" -> {
                 String mes = service.getAllStatisticsByCategory(userId);
-                messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
+                messageService.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
             }
             case "BYYEAR" -> {
                 int year = LocalDate.now().getYear();
                 userState.setUserState(UserState.WAITING_FOR_PRESS_BTN_YEAR, userId);
                 String mes = service.getStatisticsByCurrentYear(userId, year);
-                messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(year));
+                messageService.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(year));
             }
             case "DELETE" -> {
                 String mes = service.getLastExp(userId);
                 if (mes != null) {
-                    messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getConfirmDeletionMenuKeyboard());
+                    messageService.sendEditMessage(mes, userId, messageId, inlineKeyboard.getConfirmDeletionMenuKeyboard());
                 } else {
                     mes = "Не найдено ни одной записи \uD83E\uDD37\u200D♂\uFE0F";
-                    messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
+                    messageService.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
                 }
             }
             case "YES" -> {
                 String mes = service.delLastExp(userId);
-                messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+                messageService.sendEditMessage(mes, userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
             }
-            case "EXPENSE" -> messageSender.sendEditMessage(
+            case "EXPENSE" -> messageService.sendEditMessage(
                     "Выберите категорию трат ⬇\uFE0F", userId, messageId, inlineKeyboard.getExpenseCategoriesKeyboard());
             case "FOOD" -> setCategory("FOOD", messageId, userId);
             case "COMMUNICATION" -> setCategory("COMMUNICATION", messageId, userId);
@@ -63,11 +84,11 @@ public class CommandHandler {
             case "ANOTHER" -> setCategory("ANOTHER", messageId, userId);
             case "CANCEL" -> {
                 userState.clearState(userId);
-                messageSender.sendEditMessage(
+                messageService.sendEditMessage(
                         "Выберите команду \uD83C\uDFA8", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
             }
             default ->
-                    messageSender.sendEditMessage("⚠\uFE0F Неизвестная команда!", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
+                    messageService.sendEditMessage("⚠\uFE0F Неизвестная команда!", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
 
         }
     }
@@ -76,13 +97,13 @@ public class CommandHandler {
         switch (call) {
             case "CANCEL" -> {
                 userState.clearState(userId);
-                messageSender.sendEditMessage(
+                messageService.sendEditMessage(
                         "Выберите команду \uD83C\uDFA8", userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
             }
             case "CATEGORY" -> {
                 userState.clearState(userId);
                 String mes = service.getAllStatisticsByCategory(userId);
-                messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
+                messageService.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuKeyboard());
             }
             default -> {
                 if (state == UserState.WAITING_FOR_DATE) {
@@ -100,7 +121,7 @@ public class CommandHandler {
                         }
 
                         String mes = service.getStatisticsByCurrentYear(userId, yearInt);
-                        messageSender.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(yearInt));
+                        messageService.sendEditMessage(mes, userId, messageId, inlineKeyboard.getStatMenuByYearKeyboard(yearInt));
                     }
                 }
             }
@@ -113,8 +134,8 @@ public class CommandHandler {
         data.setUserUID(userId);
         userState.setUserState(UserState.WAITING_FOR_AMOUNT, userId);
         userState.setDTO(data, userId);
-        userState.addMessage(messageId, userId);
-        messageSender.sendEditMessage("Введите сумму ❗(◕‿◕)❗:\n\rНапример 1700",
+        messageService.addTempMessageId(messageId, userId);
+        messageService.sendEditMessage("Введите сумму ❗(◕‿◕)❗:\n\rНапример 1700",
                 userId, messageId, inlineKeyboard.getCancelKeyboard());
 
     }
@@ -125,15 +146,14 @@ public class CommandHandler {
             Expenditure exp = service.addExpense(dto);
             String message = exp != null ? "Запись создана ✅" : "Неудачная попытка записи ❌\r\nПопробуйте позже!";
 
-            messageSender.sendEditMessage(message + "\r\nВыберите команду \uD83C\uDFA8",
+            messageService.sendEditMessage(message + "\r\nВыберите команду \uD83C\uDFA8",
                     userId, messageId, inlineKeyboard.getFirstKeyboardMarkup());
         } else {
-            messageSender.sendMessage("Выберите команду \uD83C\uDFA8",
+            messageService.sendMessage("Выберите команду \uD83C\uDFA8",
                     userId, inlineKeyboard.getFirstKeyboardMarkup());
 
         }
-        userState.getMessageMap().forEach(messageSender::deleteMessage);
-        userState.clearMessageMap();
+        messageService.deleteTempMessages(userId);
         userState.clearExpenseCounterDTO(userId);
         userState.clearState(userId);
     }
@@ -142,8 +162,9 @@ public class CommandHandler {
         double amount = 0;
         try {
             amount = Double.parseDouble(messageText);
-        } catch (NumberFormatException ignored) {}
-        messageSender.deleteMessage(messageId, chatId);
+        } catch (NumberFormatException ignored) {
+        }
+        messageService.addTempMessageId(messageId, chatId);
         if (amount > 1)
             setAmount(amount, userId);
     }
@@ -153,6 +174,9 @@ public class CommandHandler {
         int messageId = update.getMessage().getMessageId();
         long chatId = update.getMessage().getChatId();
         long userId = update.getMessage().getFrom().getId();
+        String userName = update.getMessage().getFrom().getUserName();
+        String firstName = update.getMessage().getFrom().getFirstName();
+        String lastName = update.getMessage().getFrom().getLastName();
 
         if (userState.getState(userId) != null) {
             UserState state = userState.getState(userId);
@@ -162,9 +186,42 @@ public class CommandHandler {
             }
         }
         if (messageText.equals("/start")) {
-            userState.clearState(userId);
-            messageSender.sendMessage("Выберите команду \uD83C\uDFA8", userId, inlineKeyboard.getFirstKeyboardMarkup());
+            if (whitelistService.isAdmin(userId) || whitelistService.isAllowed(userId)) {
+
+                userState.clearState(userId);
+                messageService.sendMessage("Выберите команду \uD83C\uDFA8", userId, inlineKeyboard.getFirstKeyboardMarkup());
+
+            } else {
+                messageService.sendMessage("⛔ Дождитесь сообщения от администратора!", userId, null);
+                String message = String.format(
+                        "Новый пользователь:\nID: %d\nUsername: @%s\nFirstName: %s\nLastName: %s\nДобавить в белый список?",
+                        userId, userName, firstName, lastName
+                );
+                whitelistService.notifyAdmin(message, userId, userName);
+            }
+
         }
+    }
+
+    public void handleCallbackQuery(Update update) {
+        String call = update.getCallbackQuery().getData();
+        long userId = update.getCallbackQuery().getFrom().getId();
+        int messageId = update.getCallbackQuery().getMessage().getMessageId();
+
+        if (whitelistService.isAdmin(userId)) {
+            handleAdminCallback(call, userId, messageId);
+//TODO:correct
+        } else if (whitelistService.isAllowed(userId)) {
+
+            if (userState.getState(userId) != null) {
+                UserState state = userState.getState(userId);
+                handleStateCallback(state, call, userId, messageId);
+
+            } else {
+                handleCallback(call, userId, messageId);
+            }
+        }
+
     }
 
 
@@ -172,7 +229,7 @@ public class CommandHandler {
         ExpenseCounterDTO data = userState.getDTO(userId);
         userState.setUserState(UserState.WAITING_FOR_DATE, userId);
         data.setExpend(amount);
-        messageSender.sendMessage("✅Расходы записаны\r\n\uD83D\uDCC5Введите дату:", userId, inlineKeyboard.getDateKeyboard());
+        messageService.sendMessage("✅Расходы записаны\r\n\uD83D\uDCC5Введите дату:", userId, inlineKeyboard.getDateKeyboard());
 
     }
 

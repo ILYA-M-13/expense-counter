@@ -2,3 +2,6 @@ telegram:
   bot:
     token: ${BOT_TOKEN}
     name: ${BOT_NAME}
+    whitelist:
+      enabled: true
+      admin-ids: ${ADMIN_IDS}

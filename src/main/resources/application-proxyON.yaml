@@ -1,5 +1,8 @@
 telegram:
   bot:
+    whitelist:
+      enabled: true
+      admin-ids: ${ADMIN_IDS}
     token: ${BOT_TOKEN}
     name: ${BOT_NAME}
     proxy:

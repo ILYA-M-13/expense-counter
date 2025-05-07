@@ -144,6 +144,17 @@ public class KeyboardHandler {
         return new InlineKeyboardMarkup(rows);
     }
 
+    public InlineKeyboardMarkup getAKB(long userId,String userName) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        rows.add(List.of(
+                createButton("APPROVE", "APPROVE_"+userId+"_"+userName)));
+        rows.add(List.of(
+                createButton("CANCEL", "CANCEL")
+        ));
+        return new InlineKeyboardMarkup(rows);
+    }
+
     public InlineKeyboardMarkup getCancelKeyboard() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         rows.add(List.of(

@@ -1,4 +1,4 @@
-package ru.mayorov.bot.DTO;
+package ru.mayorov.bot.handler;
 
 public enum UserState {
     WAITING_FOR_AMOUNT,

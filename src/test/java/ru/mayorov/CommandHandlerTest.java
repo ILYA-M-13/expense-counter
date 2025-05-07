@@ -6,10 +6,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import ru.mayorov.bot.DTO.UserState;
+import ru.mayorov.bot.handler.UserState;
 import ru.mayorov.bot.handler.CommandHandler;
 import ru.mayorov.bot.handler.KeyboardHandler;
-import ru.mayorov.bot.handler.MessageSender;
+import ru.mayorov.bot.handler.MessageService;
 import ru.mayorov.bot.handler.UserStateManager;
 import ru.mayorov.service.BotService;
 
@@ -26,7 +26,7 @@ class CommandHandlerTest {
     private CommandHandler commandHandler;
 
     @Mock
-    private MessageSender messageSender;
+    private MessageService messageSender;
     @Mock
     private BotService service;
     @Mock
