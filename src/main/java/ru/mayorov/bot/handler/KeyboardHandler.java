@@ -150,7 +150,7 @@ public class KeyboardHandler {
         rows.add(List.of(
                 createButton("APPROVE", "APPROVE_"+userId+"_"+userName)));
         rows.add(List.of(
-                createButton("CANCEL", "CANCEL")
+                createButton("CANCEL", "REJECT")
         ));
         return new InlineKeyboardMarkup(rows);
     }

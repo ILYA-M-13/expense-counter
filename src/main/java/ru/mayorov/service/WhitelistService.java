@@ -31,6 +31,9 @@ public class WhitelistService {
     public void notifyAdmin(String messageToAdmin, Long userId, String userName){
         messageService.sendMessage(messageToAdmin,admin, keyboardHandler.getAKB(userId,userName));
     }
+    public void notifyUser(String message, Long userId){
+        messageService.sendMessage(message,userId, null);
+    }
 
     public String addToWhitelist(Long telegramId, String username) {
         if (userRepository.existsByTelegramId(telegramId)) {

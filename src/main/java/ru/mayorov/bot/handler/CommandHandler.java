@@ -19,23 +19,32 @@ public class CommandHandler {
     private final UserStateManager userState;
     private final WhitelistService whitelistService;
 
+    private void handleUserCallback(String call, long userId, int messageId) {
+        if (userState.getState(userId) != null) {
+            UserState state = userState.getState(userId);
+            handleStateCallback(state, call, userId, messageId);
+
+        } else {
+            handleCallback(call, userId, messageId);
+        }
+    }
 
     private void handleAdminCallback(String call, long userId, int messageId) {
-        if (call.contains("APPROVE_")) {
+
+        if (call.equals("REJECT")) {
+            messageService.sendEditMessage("Отмена", userId, messageId, null);
+        } else {
             String[] strings = call.split("_");
             String id = strings[1];
             String name = strings[2];
             try {
                 Long newUserId = Long.valueOf(id);
                 String result = whitelistService.addToWhitelist(newUserId, name);
+                whitelistService.notifyUser("Доступ предоставлен!",newUserId);
                 messageService.sendEditMessage(result, userId, messageId, null);
             } catch (NumberFormatException ignore) {
                 messageService.sendEditMessage("NumberFormatException", userId, messageId, null);
             }
-
-        }
-        if (call.equals("CANCEL")) {
-            messageService.sendEditMessage("Отмена", userId, messageId, null);
         }
     }
 
@@ -187,12 +196,11 @@ public class CommandHandler {
         }
         if (messageText.equals("/start")) {
             if (whitelistService.isAdmin(userId) || whitelistService.isAllowed(userId)) {
-
                 userState.clearState(userId);
                 messageService.sendMessage("Выберите команду \uD83C\uDFA8", userId, inlineKeyboard.getFirstKeyboardMarkup());
 
             } else {
-                messageService.sendMessage("⛔ Дождитесь сообщения от администратора!", userId, null);
+                messageService.sendMessage("⛔ Дождитесь сообщения о доступе!", userId, null);
                 String message = String.format(
                         "Новый пользователь:\nID: %d\nUsername: @%s\nFirstName: %s\nLastName: %s\nДобавить в белый список?",
                         userId, userName, firstName, lastName
@@ -209,17 +217,15 @@ public class CommandHandler {
         int messageId = update.getCallbackQuery().getMessage().getMessageId();
 
         if (whitelistService.isAdmin(userId)) {
-            handleAdminCallback(call, userId, messageId);
-//TODO:correct
-        } else if (whitelistService.isAllowed(userId)) {
-
-            if (userState.getState(userId) != null) {
-                UserState state = userState.getState(userId);
-                handleStateCallback(state, call, userId, messageId);
-
+            if (call.startsWith("APPROVE_") || call.startsWith("REJECT")) {
+                handleAdminCallback(call, userId, messageId);
             } else {
-                handleCallback(call, userId, messageId);
+                handleUserCallback(call, userId, messageId);
             }
+
+
+        } else if (whitelistService.isAllowed(userId)) {
+            handleUserCallback(call, userId, messageId);
         }
 
     }
